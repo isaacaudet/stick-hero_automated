@@ -7,12 +7,45 @@ import time
 import threading
 import logging
 import concurrent.futures
-from http_touch import AndroidTouch
+import requests
+import json
+import math
 
-touch = AndroidTouch()
 logging.basicConfig(format='%(asctime)s.%(msecs)03d %(levelname)s: %(message)s', datefmt='%M:%S', level=logging.INFO)
+prev_distance = 0
+loop = 0
 
+def cherry_wait(target, distance):
+    if distance < 150:
+        time.sleep(.45)
+    else:
+        time.sleep(.5)
+    device.shell('input touchscreen swipe 200 200 200 200 10')
+    logging.info('after tap 1')
+    if target < 150:
+        time.sleep(.005)   
+    elif target < 250:
+        time.sleep(.07)
+    elif target < 300:
+        time.sleep(.15)
+    elif target < 450:
+        time.sleep(.25)
+    elif target < 500:
+        time.sleep(.45)
+    elif target < 650:
+        time.sleep(.55)
+    elif target < 750:
+        time.sleep(.75)
+    else:
+        time.sleep(.8)
+
+        
+    logging.info('before tap 2')
+    device.shell('input touchscreen swipe 200 200 200 200 10')
+    logging.info('after tap 2')
+    
 while True:
+    loop += 1
     adb = Client(host='127.0.0.1', port=5037)
     devices = adb.devices()
 
@@ -30,7 +63,8 @@ while True:
     image = Image.open('screen.png')
     image = numpy.array(image)
 
-    pixels = [list(i[:3]) for i in image[1740]]
+    pixels = [list(i[:3]) for i in image[1735]]
+
     transitions = []
     ignore = True
     black = True
@@ -39,8 +73,7 @@ while True:
 
     for i, pixel in enumerate(pixels):
         r, g, b = [int(i) for i in pixel]
-        # if something
-        # cherry = i
+
         if ignore and (r+g+b) != 0:
             continue
         
@@ -66,20 +99,25 @@ while True:
             cherry.append(i)
             continue
     
-    print(cherry)
 
     # calculate distance to perfect vault
     start, target1, target2 = transitions
     gap = target1 - start
     target = target2 - target1 
-    distance = (gap + target / 2) * .98
+    distance = (gap + target / 2) 
+    if distance < 250:
+        distance = distance * .99
+    elif distance < 500:
+        distance = distance * .978
+    else:
+        distance = distance * .982
 
-    # cherry
-    if len(cherry) >= 2:
+    print(cherry)
+    if len(cherry) != 0:
         cherry_target = statistics.mean(cherry) - start
         cherry_possible = True
-        print(cherry_target)
-        print(cherry_possible)
+        logging.info('cherry possible: ' + str(cherry_target))
+
     else:
         cherry_possible = False
         
@@ -88,10 +126,37 @@ while True:
     logging.info('after adb swipe')
 
     if cherry_possible:
-        logging.info('before double tap')
-        touch.double_tap()
-        logging.info('after double tap')
+        cherry_wait(cherry_target, distance)  
 
     print()
+    print('Loop number: ' + str(loop))
     print()
-    time.sleep(2.7)
+    
+    if loop == 1 and cherry_possible:
+        prev_distance = cherry_target
+    if loop > 1:     
+        image = device.screencap()
+
+        with open('screen.png', 'wb') as f:
+            f.write(image)
+
+        image = Image.open('screen.png')
+        image = numpy.array(image)
+        
+        pixels = [list(i[:3]) for i in image[1350]]
+        for i, pixel in enumerate(pixels):
+            r, g, b = [int(i) for i in pixel]
+            if (r+g+b) == 383:
+                device.shell('input touchscreen swipe 850 1620 850 1620 10')
+                if prev_distance != 0:
+                    with open('cherry_distance.txt', 'a') as f:
+                        f.write(str(cherry_target) + ' ')
+                        print('write')
+                break
+        if cherry_possible:
+            prev_distance = cherry_target
+        else:
+            prev_distance = 0
+        
+    time.sleep(2.45)
+
