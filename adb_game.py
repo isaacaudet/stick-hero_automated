@@ -4,9 +4,7 @@ import statistics
 import numpy
 import os
 import time
-import threading
 import logging
-import concurrent.futures
 import requests
 import json
 import math
@@ -16,8 +14,8 @@ prev_distance = 0
 loop = 0
 
 def cherry_wait(target, distance):
-    if distance < 150:
-        time.sleep(.45)
+    if distance < 200:
+        time.sleep(.48)
     else:
         time.sleep(.5)
     device.shell('input touchscreen swipe 200 200 200 200 10')
@@ -25,15 +23,23 @@ def cherry_wait(target, distance):
     if target < 150:
         time.sleep(.005)   
     elif target < 250:
-        time.sleep(.07)
+        time.sleep(.05)
     elif target < 300:
         time.sleep(.15)
+    elif target < 250:
+        time.sleep(.15)
     elif target < 450:
-        time.sleep(.25)
+        time.sleep(.3)
     elif target < 500:
         time.sleep(.45)
+    elif target < 550:
+        time.sleep(.5)
+    elif target < 600:
+        time.sleep(.6)
     elif target < 650:
-        time.sleep(.55)
+        time.sleep(.65)
+    elif target < 700:
+        time.sleep(.8)
     elif target < 750:
         time.sleep(.75)
     else:
@@ -43,7 +49,6 @@ def cherry_wait(target, distance):
     logging.info('before tap 2')
     device.shell('input touchscreen swipe 200 200 200 200 10')
     logging.info('after tap 2')
-    
 while True:
     loop += 1
     adb = Client(host='127.0.0.1', port=5037)
@@ -105,8 +110,8 @@ while True:
     gap = target1 - start
     target = target2 - target1 
     distance = (gap + target / 2) 
-    if distance < 250:
-        distance = distance * .99
+    if distance < 300:
+        distance = distance
     elif distance < 500:
         distance = distance * .978
     else:
@@ -150,7 +155,7 @@ while True:
                 device.shell('input touchscreen swipe 850 1620 850 1620 10')
                 if prev_distance != 0:
                     with open('cherry_distance.txt', 'a') as f:
-                        f.write(str(cherry_target) + ' ')
+                        f.write(str(prev_distance) + ' ')
                         print('write')
                 break
         if cherry_possible:
@@ -158,5 +163,5 @@ while True:
         else:
             prev_distance = 0
         
-    time.sleep(2.45)
+    time.sleep(2.6)
 
